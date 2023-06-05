@@ -138,6 +138,27 @@ func (u *webHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("WWW-Authenticate", "Basic")
-	http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+	// w.Header().Set("WWW-Authenticate", "Basic")
+	// http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+
+	// hijack http.ResponseWriter for take over the connection
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		w.Header().Set("WWW-Authenticate", "Basic")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	conn, _, err := hj.Hijack()
+	if err != nil {
+		w.Header().Set("WWW-Authenticate", "Basic")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	if err := conn.Close(); err != nil {
+		w.Header().Set("WWW-Authenticate", "Basic")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 }
